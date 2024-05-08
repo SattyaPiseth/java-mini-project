@@ -2,6 +2,7 @@ package co.istad.mini_project.dao;
 
 import co.istad.mini_project.model.Student;
 
+import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,7 +15,7 @@ public interface StudentDao {
      * Get all students
      * @return list or Retrieve of students from file / database
      */
-    List<Student> getAllStudents();
+    List<Student> getAllStudents() throws FileNotFoundException;
 
     /**
      * Add student to file / database

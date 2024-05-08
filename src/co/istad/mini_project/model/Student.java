@@ -1,9 +1,6 @@
 package co.istad.mini_project.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 
@@ -15,10 +12,11 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class Student {
     private Integer id;
     private String name;
-    private String dateOfBirth;
+    private LocalDate dateOfBirth;
     private String classroom;
     private String subject;
     private LocalDate date;

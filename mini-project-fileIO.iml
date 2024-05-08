@@ -8,5 +8,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="lombok" level="project" />
+    <orderEntry type="library" name="spring-data-commons-3.2.5" level="project" />
   </component>
 </module>
