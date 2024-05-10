@@ -9,87 +9,98 @@ import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * @author Sattya
- * create at 5/5/2024 9:07 AM
- */
 public class StudentController {
     private final StudentDao studentDao;
     private final StudentView studentView;
     private final StudentModel studentModel;
 
-    // Constructor
     public StudentController(StudentDao studentDao, StudentView studentView, StudentModel studentModel) {
         this.studentDao = studentDao;
         this.studentView = studentView;
         this.studentModel = studentModel;
     }
 
-    //TODO: Implement the methods of the controller
-    public void displayStudents() throws FileNotFoundException {
-        List<Student> students = studentDao.getAllStudents();
-
-        studentView.displayStudents(students);
+    public void run() {
+        while (true) {
+            studentView.displayMenu();
+            int choice = studentView.getMenuOptionFromUser();
+            processUserChoice(choice);
+        }
     }
 
-    public void addStudent(){
+    private void processUserChoice(int choice) {
+        switch (choice) {
+            case 1:
+                displayStudents();
+                break;
+            case 2:
+                addStudent();
+                break;
+            case 3:
+                updateStudent();
+                break;
+            case 4:
+                deleteStudent();
+                break;
+            case 5:
+                searchStudents();
+                break;
+            case 6:
+                exit();
+                break;
+            default:
+                studentView.notifyError("Invalid choice. Please try again.");
+        }
+    }
+
+    private void displayStudents() {
+        try {
+            List<Student> students = studentDao.getAllStudents();
+            studentModel.setStudents(students);
+            displayFirstPage();
+        } catch (FileNotFoundException e) {
+            studentView.notifyError("File not found: " + e.getMessage());
+        }
+    }
+
+    private void addStudent() {
         Student student = studentView.getStudentInfoFromUser();
-                studentDao.addStudent(student);
+        studentDao.addStudent(student);
     }
 
-    public void updateStudent(){
+    private void updateStudent() {
         Integer id = studentView.getStudentIdFromUser();
-        Optional<Student> student = Optional.of(studentDao.getStudentById(id).orElseThrow());
-        // Update the student details
-        studentDao.updateStudent(student.get());
+        Optional<Student> studentOptional = studentDao.getStudentById(id);
+        studentOptional.ifPresentOrElse(student -> {
+            Student updatedStudent = studentView.updateStudentInfoFromUser(student.getId());
+            updatedStudent.setId(student.getId());
+            updatedStudent.setDate(student.getDate()); // Preserve original date
+            studentDao.updateStudent(updatedStudent);
+        }, () -> studentView.notifyError("Student not found with ID: " + id));
     }
 
-    public void deleteStudent(){
+    private void deleteStudent() {
         Integer id = studentView.getStudentIdFromUser();
         studentDao.deleteStudent(id);
     }
 
-    public void searchStudents(){
+    private void searchStudents() {
         String keyword = studentView.getSearchKeywordFromUser();
         List<Student> students = studentDao.searchStudents(keyword);
         studentView.displayStudents(students);
     }
 
-    public void setStudents(List<Student> students) {
-        studentModel.setStudents(students);
-    }
-
-    public void setPageSize(int pageSize) {
-        studentModel.setPageSize(pageSize);
-    }
-
-    public void setCurrentPage(int currentPage) {
-        studentModel.setCurrentPage(currentPage);
-    }
-
-    public void nextPage() {
-        if (studentModel.getCurrentPage() < studentModel.getTotalPages()) {
-            studentModel.setCurrentPage(studentModel.getCurrentPage() + 1);
-            displayCurrentPage();
-        } else {
-            System.out.println("Already on the last page");
-        }
-    }
-
-    public void previousPage() {
-        if (studentModel.getCurrentPage() > 1) {
-            studentModel.setCurrentPage(studentModel.getCurrentPage() - 1);
-            displayCurrentPage();
-        } else {
-            System.out.println("Already on the first page");
-        }
-    }
-
-    public void displayCurrentPage() {
+    private void displayCurrentPage() {
         studentView.displayStudents(studentModel.getCurrentPageStudents());
         studentView.displayPageInfo(studentModel.getCurrentPage(), studentModel.getTotalPages());
+        handlePaginationOption();
+    }
+    private void displayFirstPage(){
+        studentModel.setCurrentPage(1);
+        displayCurrentPage();
+    }
 
-        // print option pagination next previous for user choose and set page and size of page
+    private void handlePaginationOption() {
         System.out.println("1. Next page");
         System.out.println("2. Previous page");
         System.out.println("3. Set page size");
@@ -114,5 +125,31 @@ public class StudentController {
             default:
                 studentView.notifyError("Invalid choice. Please try again.");
         }
+    }
+
+    private void nextPage() {
+        if (studentModel.getCurrentPage() < studentModel.getTotalPages()) {
+            studentModel.setCurrentPage(studentModel.getCurrentPage() + 1);
+            displayCurrentPage();
+        } else {
+            System.out.println("Already on the last page");
+        }
+    }
+
+    private void previousPage() {
+        if (studentModel.getCurrentPage() > 1) {
+            studentModel.setCurrentPage(studentModel.getCurrentPage() - 1);
+            displayCurrentPage();
+        } else {
+            System.out.println("Already on the first page");
+        }
+    }
+
+    private void setPageSize(int pageSize) {
+        studentModel.setPageSize(pageSize);
+    }
+
+    private void exit() {
+        System.exit(0);
     }
 }

@@ -2,19 +2,17 @@ package co.istad.mini_project.view;
 
 import co.istad.mini_project.model.Student;
 
+
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 /**
  * @author Sattya
  * create at 5/5/2024 9:00 AM
  */
 public class StudentView {
-    private Scanner scanner;
+    private final Scanner scanner;
 
     // Constructor
     public StudentView(){
@@ -23,10 +21,10 @@ public class StudentView {
 
     public void displayStudents(List<Student> students){
         // Display all students
-        students.stream()
-                .sorted(Comparator.comparing(Student::getId))
-                .toList()
-                .forEach(System.out::println);
+        for (Student student : students) {
+            System.out.println(student);
+        }
+
     }
     public void displayPageInfo(Integer currentPage, Integer totalPages){
         // Display page info
@@ -37,27 +35,41 @@ public class StudentView {
         System.out.print("Enter student ID: ");
         Integer id = scanner.nextInt();
         System.out.print("Enter student name: ");
-        String name = scanner.next();
-        System.out.print("Enter student date of birth (yyyy-MM-dd): ");
-        String dateOfBirth = scanner.next();
+        scanner.nextLine(); // Consume newline character
+        String name = scanner.nextLine();
+        System.out.print("Enter student date of birth (YYYY-MM-DD): ");
+        LocalDate dateOfBirth = LocalDate.parse(scanner.nextLine());
         System.out.print("Enter student classroom: ");
-        String classroom = scanner.next();
+        String classroom = scanner.nextLine();
         System.out.print("Enter student subject: ");
-        String subject = scanner.next();
-        return new Student(id, name, LocalDate.parse(dateOfBirth.formatted(DateTimeFormatter.ofPattern(
-                                 "yyyy-MM-dd"
-        ))), classroom, subject, LocalDate.now());
+        String subject = scanner.nextLine();
+        return new Student(id, name, dateOfBirth, classroom, subject, LocalDate.now());
+    }
+    public Student updateStudentInfoFromUser(Integer id){
+        System.out.print("Enter student name: ");
+        scanner.nextLine(); // Consume newline character
+        String name = scanner.nextLine();
+        System.out.print("Enter student date of birth (YYYY-MM-DD): ");
+        LocalDate dateOfBirth = LocalDate.parse(scanner.nextLine());
+        System.out.print("Enter student classroom: ");
+        String classroom = scanner.nextLine();
+        System.out.print("Enter student subject: ");
+        String subject = scanner.nextLine();
+        return new Student(id, name, dateOfBirth, classroom, subject, LocalDate.now());
     }
     public Integer getStudentIdFromUser(){
         // Prompt user to enter student ID and return it
-        return 0;
+        System.out.print("Enter student ID: ");
+        return scanner.nextInt();
     }
     public String getSearchKeywordFromUser(){
         // Prompt user to enter search keyword and return it
-        return null;
+        System.out.print("Enter search keyword: ");
+        return scanner.next();
     }
     public void notifyError(String message){
         // Display error message to user
+        System.err.println("Error: " + message);
     }
 
     public void displayMenu(){

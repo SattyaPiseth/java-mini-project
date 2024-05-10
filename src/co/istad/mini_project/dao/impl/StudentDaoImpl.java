@@ -4,106 +4,113 @@ import co.istad.mini_project.dao.StudentDao;
 import co.istad.mini_project.model.Student;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
-/**
- * @author Sattya
- * create at 5/5/2024 8:59 AM
- */
 public class StudentDaoImpl implements StudentDao {
-    private static final String TRANSACTION_FILE = "transaction_add.csv";
-    private static final Object fileLock = new Object();
-    @Override
-    public List<Student> getAllStudents() {
-        List<Student> students = new ArrayList<>();
+    private static final String FILE_PATH = "transaction_add.csv";
+    private final List<Student> students = new ArrayList<>();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(TRANSACTION_FILE))) {
+    public StudentDaoImpl() {
+        loadFromFile();
+    }
+
+    private void loadFromFile() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_PATH))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] data = line.split(",");
-                if (data.length != 6) {
-                    throw new IllegalArgumentException("Invalid data format for student: " + line);
+                Student student = parseStudent(line);
+                if (student != null) {
+                    students.add(student);
                 }
-                students.add(parseStudent(data));
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error reading student data from file: " + TRANSACTION_FILE, e);
+            System.err.println("Error loading data from file: " + e.getMessage());
         }
-
-        return students;
     }
-    private Student parseStudent(String[] data) {
-        int id = Integer.parseInt(data[0]);
-        String name = data[1];
-        String dateOfBirth = data[2];
-        String classroom = data[3];
-        String subject = data[4];
-        LocalDate date = LocalDate.parse(data[5]);
 
-        return new Student(id,name,LocalDate.parse(dateOfBirth.formatted(DateTimeFormatter.ofPattern("yyyy-MM-dd"))),classroom,subject,date);
+    private Student parseStudent(String line) {
+        String[] parts = line.split(",");
+        if (parts.length < 6) {
+            System.err.println("Invalid student data: " + line);
+            return null;
+        }
+        try {
+            int id = Integer.parseInt(parts[0]);
+            String name = parts[1];
+            LocalDate dateOfBirth = LocalDate.parse(parts[2]);
+            String classroom = parts[3];
+            String subject = parts[4];
+            LocalDate date = LocalDate.parse(parts[5]);
+            return new Student(id, name, dateOfBirth, classroom, subject, date);
+        } catch (ArrayIndexOutOfBoundsException | IllegalArgumentException e) {
+            System.err.println("Error parsing student data: " + e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public List<Student> getAllStudents() {
+        return new ArrayList<>(students);
     }
 
     @Override
     public void addStudent(Student student) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(TRANSACTION_FILE, true))) {
-            // Serialize the student object to a string
-            String studentData = serializeStudent(student);
-
-            // Acquire lock before writing to file
-            synchronized (fileLock) {
-                // Write data to file
-                writer.write(studentData);
-                writer.newLine();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Error adding student", e);
-        }
+        students.add(student);
+        saveToFile();
     }
 
-    private String serializeStudent(Student student) {
-        // Serialize the student object to a string representation
-        // You can use any serialization technique like JSON, XML, etc.
-        // Here, for simplicity, let's assume concatenating strings is sufficient
-        StringBuilder sb = new StringBuilder();
-        sb.append(student.getId()).append(",");
-        sb.append(student.getName()).append(",");
-        sb.append(student.getDateOfBirth()).append(",");
-        sb.append(student.getClassroom()).append(",");
-        sb.append(student.getSubject()).append(",");
-        sb.append(student.getDate());
-        return sb.toString();
+    private void saveToFile() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
+            for (Student student : students) {
+                writer.write(studentToCsvString(student) + "\n");
+            }
+        } catch (IOException e) {
+            System.err.println("Error saving data to file: " + e.getMessage());
+        }
     }
 
     @Override
     public void updateStudent(Student student) {
-
+        Optional<Student> existingStudent = getStudentById(student.getId());
+        if (existingStudent.isPresent()) {
+            int index = students.indexOf(existingStudent.get());
+            students.set(index, student);
+            saveToFile();
+        } else {
+            System.err.println("Student not found with ID: " + student.getId());
+        }
     }
 
     @Override
     public void deleteStudent(Integer id) {
-
+        students.removeIf(student -> student.getId().equals(id));
+        saveToFile();
     }
 
     @Override
     public List<Student> searchStudents(String keyword) {
-        return null;
+        List<Student> result = new ArrayList<>();
+        for (Student student : students) {
+            if (student.getName().contains(keyword) || student.getId().toString().contains(keyword)) {
+                result.add(student);
+            }
+        }
+        return result;
     }
 
     @Override
     public Optional<Student> getStudentById(Integer id) {
-        return Optional.empty();
+        return students.stream()
+                .filter(student -> student.getId().equals(id))
+                .findFirst();
+    }
+
+    private String studentToCsvString(Student student) {
+        return String.format("%d,%s,%s,%s,%s,%s",
+                student.getId(), student.getName(), student.getDateOfBirth(),
+                student.getClassroom(), student.getSubject(), student.getDate());
     }
 }

@@ -19,6 +19,8 @@ public class StudentModel {
     private Integer pageSize;
     private Integer currentPage;
 
+
+
     public StudentModel(){
         students = new ArrayList<>();
         pageSize = 10;
@@ -30,7 +32,7 @@ public class StudentModel {
         int endIndex = Math.min(startIndex + pageSize, students.size());
         return students.subList(startIndex, endIndex);
     }
-    public Integer getTotalPages() {
+    public int getTotalPages() {
         return (int) Math.ceil((double) students.size() / pageSize);
     }
 }
