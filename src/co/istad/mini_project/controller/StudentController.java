@@ -30,24 +30,44 @@ public class StudentController {
 
     private void processUserChoice(int choice) {
         switch (choice) {
+            // add student
             case 1:
-                displayStudents();
-                break;
-            case 2:
                 addStudent();
                 break;
+            // list all students
+            case 2:
+                displayStudents();
+                break;
+            // commit data to file
             case 3:
-                updateStudent();
+
                 break;
+            // search for student
             case 4:
-                deleteStudent();
-                break;
-            case 5:
                 searchStudents();
                 break;
+            // update student's info by id
+            case 5:
+                updateStudent();
+                break;
+            // delete student's data
             case 6:
+                deleteStudent();
+                break;
+
+            // generate data to file
+            case 7:
+                break;
+
+            // delete/clear all data from data store
+            case 8:
+                break;
+
+            // exit
+            case 0, 99:
                 exit();
                 break;
+
             default:
                 studentView.notifyError("Invalid choice. Please try again.");
         }

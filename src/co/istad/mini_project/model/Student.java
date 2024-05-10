@@ -3,6 +3,7 @@ package co.istad.mini_project.model;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * @author Sattya
@@ -17,7 +18,7 @@ public class Student {
     private Integer id;
     private String name;
     private LocalDate dateOfBirth;
-    private String classroom;
-    private String subject;
+    private List<String> classroom;
+    private List<String> subject;
     private LocalDate date;
 }
