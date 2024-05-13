@@ -1,6 +1,7 @@
 package co.istad.mini_project.controller;
 
 import co.istad.mini_project.dao.StudentDao;
+import co.istad.mini_project.dao.impl.StudentDaoImpl;
 import co.istad.mini_project.model.Student;
 import co.istad.mini_project.model.StudentModel;
 import co.istad.mini_project.view.StudentView;
@@ -22,12 +23,20 @@ public class StudentController {
         this.studentModel = studentModel;
     }
 
-    public void run() {
+    public void run() throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Do you want to commit data before starting? (Y/N): ");
+        String choice = scanner.nextLine().trim();
+        if (choice.equalsIgnoreCase("Y")) {
+            commitDataToFile();
+        }else {
+            StudentDaoImpl.clearTransactionFiles();
+        }
         while (true) {
             try {
                 studentView.displayMenu();
-                int choice = studentView.getMenuOptionFromUser();
-                processUserChoice(choice);
+                int option = studentView.getMenuOptionFromUser();
+                processUserChoice(option);
             } catch (IOException e) {
                 studentView.notifyError("An error occurred: " + e.getMessage());
             }
@@ -171,6 +180,7 @@ public class StudentController {
     private void exit() {
         System.exit(0);
     }
+
     private void commitDataToFile() {
         studentDao.commit();
     }

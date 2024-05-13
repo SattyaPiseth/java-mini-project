@@ -202,7 +202,7 @@ public class StudentDaoImpl implements StudentDao {
         }
     }
 
-    private void clearTransactionFiles() throws IOException {
+    public static void clearTransactionFiles() throws IOException {
         Files.write(Paths.get(ADD_TRANSACTION_PATH), new ArrayList<>());
         Files.write(Paths.get(UPDATE_TRANSACTION_PATH), new ArrayList<>());
         Files.write(Paths.get(DELETE_TRANSACTION_PATH), new ArrayList<>());
