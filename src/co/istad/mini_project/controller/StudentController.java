@@ -6,7 +6,6 @@ import co.istad.mini_project.model.Student;
 import co.istad.mini_project.model.StudentModel;
 import co.istad.mini_project.view.StudentView;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -23,37 +22,53 @@ public class StudentController {
         this.studentModel = studentModel;
     }
 
-    public void run() throws IOException {
+    public void run() {
+        try {
+            promptCommitData();
+            while (true) {
+                studentView.displayMenu();
+                int option = studentView.getMenuOptionFromUser();
+                processUserChoice(option);
+            }
+        } catch (IOException e) {
+            studentView.notifyError("An error occurred: " + e.getMessage());
+        }
+    }
+    private void promptCommitData() throws IOException {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Do you want to commit data before starting? (Y/N): ");
         String choice = scanner.nextLine().trim();
         if (choice.equalsIgnoreCase("Y")) {
             commitDataToFile();
-        }else {
+        } else {
             StudentDaoImpl.clearTransactionFiles();
-        }
-        while (true) {
-            try {
-                studentView.displayMenu();
-                int option = studentView.getMenuOptionFromUser();
-                processUserChoice(option);
-            } catch (IOException e) {
-                studentView.notifyError("An error occurred: " + e.getMessage());
-            }
         }
     }
 
-    private void processUserChoice(int choice) throws IOException {
-        switch (choice) {
-            case 1 -> addStudent();
-            case 2 -> displayStudents();
-            case 3 -> commitDataToFile();
-            case 4 -> searchStudents();
-            case 5 -> updateStudent();
-            case 6 -> deleteStudent();
-            case 0, 99 -> exit();
-            default -> studentView.notifyError("Invalid choice. Please try again.");
+    private void processUserChoice(int choice) {
+        try {
+            switch (choice) {
+                case 1 -> addStudent();
+                case 2 -> displayStudents();
+                case 3 -> commitDataToFile();
+                case 4 -> searchStudents();
+                case 5 -> updateStudent();
+                case 6 -> deleteStudent();
+                case 7 -> generateDataToFile();
+                case 8 -> deleteAllData();
+                case 0, 99 -> exit();
+                default -> studentView.notifyError("Invalid choice. Please try again.");
+            }
+        } catch (IOException e) {
+            studentView.notifyError("An error occurred: " + e.getMessage());
         }
+    }
+    private void generateDataToFile() {
+        studentDao.generateDataToFile();
+    }
+
+    private void deleteAllData() {
+        studentDao.deleteAllData();
     }
 
 
@@ -72,21 +87,17 @@ public class StudentController {
         studentDao.addStudent(student);
     }
 
-
     private void updateStudent() throws IOException {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Enter student id: ");
         Integer id = scanner.nextInt();
         Optional<Student> studentOptional = studentDao.getStudentById(id);
-        // use stream api for update student
         studentOptional.ifPresentOrElse(
                 student -> {
                     Student newStudent = studentView.updateStudentInfoFromUser(student.getId());
                     studentDao.updateStudent(newStudent);
                 },
-                () -> {
-                    studentView.notifyError("Student not found with id: " + id);
-                }
+                () -> studentView.notifyError("Student not found with id: " + id)
         );
     }
 
@@ -96,7 +107,6 @@ public class StudentController {
         System.out.print("Enter student id: ");
         Integer id = scanner.nextInt();
         Optional<Student> studentOptional = studentDao.getStudentById(id);
-        System.out.println(studentOptional);
         studentOptional.ifPresentOrElse(
                 student -> {
                     try {
@@ -108,7 +118,6 @@ public class StudentController {
                 () -> studentView.notifyError("Student not found with id: " + id)
         );
     }
-
 
     private void searchStudents() throws IOException {
         String keyword = studentView.getSearchKeywordFromUser();
@@ -136,23 +145,18 @@ public class StudentController {
 
         int choice = studentView.getMenuOptionFromUser();
         switch (choice) {
-            case 1:
-                nextPage();
-                break;
-            case 2:
-                previousPage();
-                break;
-            case 3:
+            case 1 -> nextPage();
+            case 2 -> previousPage();
+            case 3 -> {
                 System.out.print("Enter new page size: ");
                 setPageSize(studentView.getMenuOptionFromUser());
                 displayCurrentPage();
-                break;
-            case 4:
-                break;
-            default:
-                studentView.notifyError("Invalid choice. Please try again.");
+            }
+            case 4 -> { /* do nothing */ }
+            default -> studentView.notifyError("Invalid choice. Please try again.");
         }
     }
+
 
 
     private void nextPage() {

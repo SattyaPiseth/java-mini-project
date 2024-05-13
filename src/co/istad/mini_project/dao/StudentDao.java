@@ -54,4 +54,11 @@ public interface StudentDao {
      *  Commit transaction to file / database
      */
     void commit();
+
+    /**
+     * Delete all data from file / database
+     */
+    void deleteAllData();
+
+    void generateDataToFile();
 }

@@ -202,6 +202,21 @@ public class StudentDaoImpl implements StudentDao {
         }
     }
 
+    @Override
+    public void deleteAllData() {
+        try {
+            Files.write(Paths.get(PRIMARY_DATA_PATH), new ArrayList<>());
+            clearTransactionFiles();
+        } catch (IOException e) {
+            throw new RuntimeException("Error deleting data: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void generateDataToFile() {
+
+    }
+
     public static void clearTransactionFiles() throws IOException {
         Files.write(Paths.get(ADD_TRANSACTION_PATH), new ArrayList<>());
         Files.write(Paths.get(UPDATE_TRANSACTION_PATH), new ArrayList<>());
