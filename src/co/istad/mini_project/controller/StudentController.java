@@ -6,8 +6,10 @@ import co.istad.mini_project.model.StudentModel;
 import co.istad.mini_project.view.StudentView;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Scanner;
 
 public class StudentController {
     private final StudentDao studentDao;
@@ -22,100 +24,96 @@ public class StudentController {
 
     public void run() {
         while (true) {
-            studentView.displayMenu();
-            int choice = studentView.getMenuOptionFromUser();
-            processUserChoice(choice);
+            try {
+                studentView.displayMenu();
+                int choice = studentView.getMenuOptionFromUser();
+                processUserChoice(choice);
+            } catch (IOException e) {
+                studentView.notifyError("An error occurred: " + e.getMessage());
+            }
         }
     }
 
-    private void processUserChoice(int choice) {
+    private void processUserChoice(int choice) throws IOException {
         switch (choice) {
-            // add student
-            case 1:
-                addStudent();
-                break;
-            // list all students
-            case 2:
-                displayStudents();
-                break;
-            // commit data to file
-            case 3:
-
-                break;
-            // search for student
-            case 4:
-                searchStudents();
-                break;
-            // update student's info by id
-            case 5:
-                updateStudent();
-                break;
-            // delete student's data
-            case 6:
-                deleteStudent();
-                break;
-
-            // generate data to file
-            case 7:
-                break;
-
-            // delete/clear all data from data store
-            case 8:
-                break;
-
-            // exit
-            case 0, 99:
-                exit();
-                break;
-
-            default:
-                studentView.notifyError("Invalid choice. Please try again.");
+            case 1 -> addStudent();
+            case 2 -> displayStudents();
+            case 3 -> commitDataToFile();
+            case 4 -> searchStudents();
+            case 5 -> updateStudent();
+            case 6 -> deleteStudent();
+            case 0, 99 -> exit();
+            default -> studentView.notifyError("Invalid choice. Please try again.");
         }
     }
+
 
     private void displayStudents() {
         try {
             List<Student> students = studentDao.getAllStudents();
             studentModel.setStudents(students);
             displayFirstPage();
-        } catch (FileNotFoundException e) {
-            studentView.notifyError("File not found: " + e.getMessage());
+        } catch (IOException e) {
+            studentView.notifyError("An error occurred while fetching students: " + e.getMessage());
         }
     }
 
-    private void addStudent() {
+    private void addStudent() throws IOException {
         Student student = studentView.getStudentInfoFromUser();
         studentDao.addStudent(student);
     }
 
-    private void updateStudent() {
-        Integer id = studentView.getStudentIdFromUser();
+
+    private void updateStudent() throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter student id: ");
+        Integer id = scanner.nextInt();
         Optional<Student> studentOptional = studentDao.getStudentById(id);
-        studentOptional.ifPresentOrElse(student -> {
-            Student updatedStudent = studentView.updateStudentInfoFromUser(student.getId());
-            updatedStudent.setId(student.getId());
-            updatedStudent.setDate(student.getDate()); // Preserve original date
-            studentDao.updateStudent(updatedStudent);
-        }, () -> studentView.notifyError("Student not found with ID: " + id));
+        // use stream api for update student
+        studentOptional.ifPresentOrElse(
+                student -> {
+                    Student newStudent = studentView.updateStudentInfoFromUser(student.getId());
+                    studentDao.updateStudent(newStudent);
+                },
+                () -> {
+                    studentView.notifyError("Student not found with id: " + id);
+                }
+        );
     }
 
-    private void deleteStudent() {
-        Integer id = studentView.getStudentIdFromUser();
-        studentDao.deleteStudent(id);
+
+    private void deleteStudent() throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter student id: ");
+        Integer id = scanner.nextInt();
+        Optional<Student> studentOptional = studentDao.getStudentById(id);
+        System.out.println(studentOptional);
+        studentOptional.ifPresentOrElse(
+                student -> {
+                    try {
+                        studentDao.deleteStudent(student.getId());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                },
+                () -> studentView.notifyError("Student not found with id: " + id)
+        );
     }
 
-    private void searchStudents() {
+
+    private void searchStudents() throws IOException {
         String keyword = studentView.getSearchKeywordFromUser();
         List<Student> students = studentDao.searchStudents(keyword);
         studentView.displayStudents(students);
     }
+
 
     private void displayCurrentPage() {
         studentView.displayStudents(studentModel.getCurrentPageStudents());
         studentView.displayPageInfo(studentModel.getCurrentPage(), studentModel.getTotalPages());
         handlePaginationOption();
     }
-    private void displayFirstPage(){
+    private void displayFirstPage() {
         studentModel.setCurrentPage(1);
         displayCurrentPage();
     }
@@ -147,6 +145,7 @@ public class StudentController {
         }
     }
 
+
     private void nextPage() {
         if (studentModel.getCurrentPage() < studentModel.getTotalPages()) {
             studentModel.setCurrentPage(studentModel.getCurrentPage() + 1);
@@ -171,5 +170,8 @@ public class StudentController {
 
     private void exit() {
         System.exit(0);
+    }
+    private void commitDataToFile() {
+        studentDao.commit();
     }
 }

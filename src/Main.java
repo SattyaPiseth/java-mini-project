@@ -5,9 +5,10 @@ import co.istad.mini_project.model.StudentModel;
 import co.istad.mini_project.view.StudentView;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class Main {
-    public static void main(String[] args) throws InterruptedException, FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         StudentDao studentDao = new StudentDaoImpl();
         StudentView studentView = new StudentView();
         StudentModel studentModel = new StudentModel();

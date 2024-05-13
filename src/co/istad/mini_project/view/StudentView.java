@@ -4,9 +4,8 @@ import co.istad.mini_project.model.Student;
 
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.time.format.DateTimeParseException;
+import java.util.*;
 
 /**
  * @author Sattya
@@ -33,7 +32,7 @@ public class StudentView {
     }
     public Student getStudentInfoFromUser() {
         // Prompt user to enter student information and return a new Student object
-        System.out.print("Enter student ID: ");
+        System.out.print("Enter student id: ");
         Integer id = scanner.nextInt();
         System.out.print("Enter student name: ");
         scanner.nextLine(); // Consume newline character
@@ -44,6 +43,7 @@ public class StudentView {
         List<String> subject = getSubjectFromUser();
         return new Student(id, name, dateOfBirth, classroom, subject, LocalDate.now());
     }
+
     private List<String> getClassroomFromUser() {
         // Prompt user to enter classroom information and return a list
         System.out.print("Enter student classroom (comma-separated): ");
@@ -67,20 +67,21 @@ public class StudentView {
     }
 
     public Student updateStudentInfoFromUser(Integer id) {
-        System.out.print("Enter student name: ");
-        scanner.nextLine(); // Consume newline character
-        String name = scanner.nextLine();
-        System.out.print("Enter student date of birth (YYYY-MM-DD): ");
-        LocalDate dateOfBirth = LocalDate.parse(scanner.nextLine());
-        List<String> classroom = getClassroomFromUser();
-        List<String> subject = getSubjectFromUser();
-        return new Student(id, name, dateOfBirth, classroom, subject, LocalDate.now());
+        try {
+            System.out.print("Enter student name: ");
+            scanner.nextLine(); // Consume newline character
+            String name = scanner.nextLine();
+            System.out.print("Enter student date of birth (YYYY-MM-DD): ");
+            LocalDate dateOfBirth = LocalDate.parse(scanner.nextLine());
+            List<String> classroom = getClassroomFromUser();
+            List<String> subject = getSubjectFromUser();
+            return (new Student(id, name, dateOfBirth, classroom, subject, LocalDate.now()));
+        } catch (DateTimeParseException | InputMismatchException e) {
+            System.err.println("Error: Invalid input. Please enter valid data.");
+            return null;
+        }
     }
-    public Integer getStudentIdFromUser(){
-        // Prompt user to enter student ID and return it
-        System.out.print("Enter student ID: ");
-        return scanner.nextInt();
-    }
+
     public String getSearchKeywordFromUser(){
         // Prompt user to enter search keyword and return it
         System.out.print("Enter search keyword: ");
@@ -91,18 +92,19 @@ public class StudentView {
         System.err.println("Error: " + message);
     }
 
-    public void displayMenu(){
-        // Display the main menu
-        System.out.println("=".repeat(100));
-        System.out.print("""
-                1. ADD NEW STUDENT              2. LIST ALL STUDENTS            3. COMMIT DATA TO FILE
-                4. SEARCH FOR STUDENT           5. UPDATE STUDENT'S INFO BY ID  6. DELETE STUDENT'S DATA
-                7. GENERATE DATA TO FILE        8. DELETE/CLEAR ALL DATA FROM DATA STORE
-                0,99. EXIT
-                """);
-        System.out.println("=".repeat(100));
+    public void displayMenu() {
+        String menu = """
+            =======================================================================================
+            1. ADD NEW STUDENT              2. LIST ALL STUDENTS            3. COMMIT DATA TO FILE
+            4. SEARCH FOR STUDENT           5. UPDATE STUDENT'S INFO BY ID  6. DELETE STUDENT'S DATA
+            7. GENERATE DATA TO FILE        8. DELETE/CLEAR ALL DATA FROM DATA STORE
+            0,99. EXIT
+            =======================================================================================
+            """;
+        System.out.println(menu);
         System.out.print("> Insert option: ");
     }
+
     public Integer getMenuOptionFromUser(){
         // Prompt user to enter menu option and return it
         return scanner.nextInt();
