@@ -24,8 +24,10 @@ public class StudentDaoImpl implements StudentDao {
     private static final String DELETE_TRANSACTION_PATH = "transaction_delete.txt";
     private static final String DATE_FORMAT = "yyyy-MM-dd";
     private final List<Student> students = new ArrayList<>();
-    private static final int BUFFER_SIZE = 8192; // 8 KB
-    private static final int BATCH_SIZE = 1000; // Adjust as needed
+    private static final int MIN_BATCH_SIZE = 10000; // Increase batch size for better performance
+    private static final int MAX_BATCH_SIZE = 100000; // Maximum batch size
+    private static final int BUFFER_SIZE = 8192 * 8; // 64 KB buffer size
+    private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors(); // Use available processors
 
 
     public StudentDaoImpl() {
@@ -235,17 +237,22 @@ public class StudentDaoImpl implements StudentDao {
             return;
         }
 
-        int numThreads = Math.min(Runtime.getRuntime().availableProcessors(), numRecords / BATCH_SIZE);
+        int numThreads = Math.min(MAX_THREADS, numRecords / MIN_BATCH_SIZE);
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(PRIMARY_DATA_PATH, StandardCharsets.UTF_8), BUFFER_SIZE)) {
+        try (FileOutputStream fos = new FileOutputStream(PRIMARY_DATA_PATH);
+             OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+             BufferedWriter writer = new BufferedWriter(osw, BUFFER_SIZE)) {
+
             long startTime = System.currentTimeMillis();
 
-            for (int i = 1; i <= numRecords; i += BATCH_SIZE) {
+            for (int i = 1; i <= numRecords; i += MAX_BATCH_SIZE) {
                 int startRecord = i;
-                int endRecord = Math.min(startRecord + BATCH_SIZE - 1, numRecords);
+                int endRecord = Math.min(startRecord + MAX_BATCH_SIZE - 1, numRecords);
                 executor.submit(() -> {
-                    writeRecords(writer, startRecord, endRecord);
+                    synchronized (writer) {
+                        writeRecords(writer, startRecord, endRecord);
+                    }
                 });
             }
 
@@ -255,11 +262,9 @@ public class StudentDaoImpl implements StudentDao {
             long endTime = System.currentTimeMillis();
             System.out.println("Records generated: " + numRecords);
             System.out.println("Total time taken: " + (endTime - startTime) + " ms");
-        } catch (IOException e) {
-            System.err.println("Error writing records to file: " + e.getMessage());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // Preserve interrupted status
-            System.err.println("Thread was interrupted: " + e.getMessage());
+
+        } catch (IOException | InterruptedException e) {
+            System.err.println("Error generating data: " + e.getMessage());
         }
     }
 
@@ -268,26 +273,20 @@ public class StudentDaoImpl implements StudentDao {
     }
 
     private void writeRecords(BufferedWriter writer, int startRecord, int endRecord) {
-        for (int i = startRecord; i <= endRecord; i++) {
-            String record = generateRecord(i);
-            writeRecord(writer, record);
+        try {
+            for (int i = startRecord; i <= endRecord; i++) {
+                String record = generateRecord(i);
+                writer.write(record);
+                writer.newLine(); // Ensure each record is written to a new line
+            }
+        } catch (IOException e) {
+            System.err.println("Error writing records: " + e.getMessage());
         }
     }
 
     private String generateRecord(int recordNumber) {
-        // Example pattern: "1,sattya,2000-01-01,c,c,2024-05-14"
         return String.format("%d,sattya,2000-01-01,c,c,2024-05-14", recordNumber);
     }
-
-    private synchronized void writeRecord(BufferedWriter writer, String record) {
-        try {
-            writer.write(record);
-            writer.newLine();
-        } catch (IOException e) {
-            System.err.println("Error writing record to file: " + e.getMessage());
-        }
-    }
-
     public static void clearTransactionFiles() throws IOException {
         Files.write(Paths.get(ADD_TRANSACTION_PATH), new ArrayList<>());
         Files.write(Paths.get(UPDATE_TRANSACTION_PATH), new ArrayList<>());
