@@ -64,7 +64,9 @@ public class StudentController {
         }
     }
     private void generateDataToFile() {
-        studentDao.generateDataToFile();
+        System.out.print("Enter number of records to generate: "); 
+        int numberOfRecords = studentView.getMenuOptionFromUser();
+        studentDao.generateDataToFile(numberOfRecords);
     }
 
     private void deleteAllData() {

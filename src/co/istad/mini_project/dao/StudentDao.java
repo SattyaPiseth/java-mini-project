@@ -60,5 +60,5 @@ public interface StudentDao {
      */
     void deleteAllData();
 
-    void generateDataToFile();
+    void generateDataToFile(int numRecords);
 }
