@@ -71,9 +71,11 @@ public class StudentDaoImpl implements StudentDao {
 
     @Override
     public List<Student> getAllStudents() {
-        try (Stream<String> lines = Files.lines(Paths.get(PRIMARY_DATA_PATH), StandardCharsets.UTF_8)) {
-            return lines.map(this::parseStudent)
-                    .filter(Objects::nonNull)
+        try {
+            return Files.lines(Paths.get(PRIMARY_DATA_PATH), StandardCharsets.UTF_8)
+                    .parallel() // Process lines in parallel for improved performance
+                    .map(this::parseStudent)
+                    .filter(Objects::nonNull) // Filter out null students
                     .sorted(Comparator.comparingInt(Student::getId)) // Sort by student ID
                     .collect(Collectors.toList());
         } catch (IOException e) {
@@ -172,18 +174,18 @@ public class StudentDaoImpl implements StudentDao {
             List<Student> currentData = loadStudentsFromFile(PRIMARY_DATA_PATH);
 
             // Step 1: Remove students listed in deleteTransactions from currentData
-            Set<Integer> deleteIds = deleteTransactions.stream()
+            Set<Integer> deleteIds = deleteTransactions.stream().parallel()
                     .map(Student::getId)
                     .collect(Collectors.toSet());
             currentData.removeIf(student -> deleteIds.contains(student.getId()));
 
             // Step 2: Update existing students
-            Map<Integer, Student> updateMap = updateTransactions.stream()
+            Map<Integer, Student> updateMap = updateTransactions.stream().parallel()
                     .collect(Collectors.toMap(Student::getId, Function.identity()));
             currentData.replaceAll(student -> updateMap.getOrDefault(student.getId(), student));
 
             // Step 3: Add new students (ensuring uniqueness)
-            Set<Integer> currentIds = currentData.stream()
+            Set<Integer> currentIds = currentData.stream().parallel()
                     .map(Student::getId)
                     .collect(Collectors.toSet());
             addTransactions.stream()

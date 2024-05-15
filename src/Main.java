@@ -17,37 +17,25 @@ import java.util.concurrent.TimeUnit;
 
 public class Main {
     private static final String PRIMARY_DATA_PATH = "primary_data.txt";
-    private static final int NUM_THREADS = Runtime.getRuntime().availableProcessors() * 2; // Double the number of available processors
-    private static final int BUFFER_SIZE = 1024 * 1024 * 10; // 10 MB buffer size
+    private static final int MAX_BUFFER_SIZE = 1024 * 1024 * 100; // Maximum buffer size (100 MB)
+    private static final int NUM_THREADS = Runtime.getRuntime().availableProcessors() * 2; // Utilize available CPU cores efficiently
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) {
+        StudentController studentController = new StudentController(new StudentDaoImpl(), new StudentView(), new StudentModel());
+
         long startTime = System.nanoTime();
-
-        // Set up DAO, view, model, and controller
-        StudentDao studentDao = new StudentDaoImpl();
-        StudentView studentView = new StudentView();
-        StudentModel studentModel = new StudentModel();
-        StudentController studentController = new StudentController(studentDao, studentView, studentModel);
-
-        // Open the file asynchronously
         try (AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(Paths.get(PRIMARY_DATA_PATH), StandardOpenOption.READ)) {
+            long fileSize = fileChannel.size();
+            int bufferSize = calculateBufferSize(fileSize);
 
-            // Create thread pool
             ExecutorService executor = Executors.newFixedThreadPool(NUM_THREADS);
+            CountDownLatch latch = new CountDownLatch((int) Math.ceil((double) fileSize / bufferSize));
 
-            // Set up latch to wait for all tasks to complete
-            CountDownLatch latch = new CountDownLatch(NUM_THREADS);
-
-            // Submit tasks to read portions of the file in parallel
-            for (int i = 0; i < NUM_THREADS; i++) {
-                long position = i * (fileChannel.size() / NUM_THREADS);
-                executor.submit(new FileReader(fileChannel, position, BUFFER_SIZE, latch));
+            for (long position = 0; position < fileSize; position += bufferSize) {
+                executor.submit(new FileReader(fileChannel, position, bufferSize, latch));
             }
 
-            // Wait for all tasks to complete
             latch.await();
-
-            // Shutdown executor
             executor.shutdown();
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
@@ -56,8 +44,11 @@ public class Main {
         long endTime = System.nanoTime();
         System.out.println("Total execution time for file reading: " + TimeUnit.NANOSECONDS.toMillis(endTime - startTime) + " ms");
 
-        // Start the application
         studentController.run();
+    }
+
+    private static int calculateBufferSize(long fileSize) {
+        return (int) Math.min(MAX_BUFFER_SIZE, fileSize);
     }
 
     static class FileReader implements Runnable {
@@ -66,7 +57,7 @@ public class Main {
         private final int bufferSize;
         private final CountDownLatch latch;
 
-        public FileReader(AsynchronousFileChannel fileChannel, long position, int bufferSize, CountDownLatch latch) {
+        FileReader(AsynchronousFileChannel fileChannel, long position, int bufferSize, CountDownLatch latch) {
             this.fileChannel = fileChannel;
             this.position = position;
             this.bufferSize = bufferSize;
@@ -75,7 +66,8 @@ public class Main {
 
         @Override
         public void run() {
-            ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
+            ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
+
             fileChannel.read(buffer, position, buffer, new CompletionHandler<Integer, ByteBuffer>() {
                 @Override
                 public void completed(Integer result, ByteBuffer attachment) {

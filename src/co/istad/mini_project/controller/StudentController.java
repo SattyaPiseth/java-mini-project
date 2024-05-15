@@ -127,9 +127,19 @@ public class StudentController {
 
 
     private void displayCurrentPage() {
-        studentView.displayStudents(studentModel.getCurrentPageStudents());
-        studentView.displayPageInfo(studentModel.getCurrentPage(), studentModel.getTotalPages());
-        handlePaginationOption();
+//        studentView.displayStudents(studentModel.getCurrentPageStudents());
+//        studentView.displayPageInfo(studentModel.getCurrentPage(), studentModel.getTotalPages());
+//        handlePaginationOption();
+        try {
+            List<Student> currentPageStudents = studentModel.getCurrentPageStudents();
+            studentView.displayStudents(currentPageStudents);
+            int currentPage = studentModel.getCurrentPage();
+            int totalPages = studentModel.getTotalPages();
+            studentView.displayPageInfo(currentPage, totalPages);
+            handlePaginationOption();
+        } catch (Exception e) {
+            studentView.notifyError("An error occurred while displaying the current page: " + e.getMessage());
+        }
     }
     private void displayFirstPage() {
         studentModel.setCurrentPage(1);
