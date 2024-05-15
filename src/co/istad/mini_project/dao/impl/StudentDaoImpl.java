@@ -119,10 +119,18 @@ public class StudentDaoImpl implements StudentDao {
 
     @Override
     public void deleteStudent(Integer id) {
-        // get student to be updated write in file
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(DELETE_TRANSACTION_PATH, StandardCharsets.UTF_8))) {
-            writer.write(studentToCsvString(getStudentById(id).get()));
-            writer.newLine();
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(DELETE_TRANSACTION_PATH, StandardCharsets.UTF_8, true))) {
+            Optional<Student> studentToDelete = getStudentById(id);
+            if (studentToDelete.isPresent()) {
+                String studentData = studentToCsvString(studentToDelete.get());
+                writer.write(studentData);
+                writer.newLine();
+                writer.flush(); // Flush buffer to ensure data is written to disk immediately
+                // Optionally, remove the student from the in-memory data structure
+                students.remove(studentToDelete.get());
+            } else {
+                throw new IllegalArgumentException("Student with ID " + id + " not found.");
+            }
         } catch (IOException e) {
             throw new RuntimeException("Error updating student data: " + e.getMessage(), e);
         }
