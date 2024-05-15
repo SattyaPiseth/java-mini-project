@@ -109,6 +109,7 @@ public class StudentDaoImpl implements StudentDao {
         // get student to be updated write in file
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(UPDATE_TRANSACTION_PATH, StandardCharsets.UTF_8))) {
             writer.write(studentToCsvString(student));
+            writer.newLine();
         } catch (IOException e) {
             throw new RuntimeException("Error updating student data: " + e.getMessage(), e);
         }
@@ -119,6 +120,7 @@ public class StudentDaoImpl implements StudentDao {
         // get student to be updated write in file
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(DELETE_TRANSACTION_PATH, StandardCharsets.UTF_8))) {
             writer.write(studentToCsvString(getStudentById(id).get()));
+            writer.newLine();
         } catch (IOException e) {
             throw new RuntimeException("Error updating student data: " + e.getMessage(), e);
         }
